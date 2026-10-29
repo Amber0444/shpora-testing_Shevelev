@@ -10,9 +10,9 @@ public sealed class PersonBuilder
 
     public PersonBuilder Named(string name) { _name = name; return this; }
     public PersonBuilder Aged(int age)      { _age = age;   return this; }
-    public PersonBuilder WithParent(Person parent) { _parent = parent; return this; }
-    public PersonBuilder WithHeight(int h)  { _height = h; return this; }
-    public PersonBuilder WithWeight(int w)  { _weight = w; return this; }
+    public PersonBuilder WithParent(Person? parent) { _parent = parent; return this; }
+    public PersonBuilder WithHeight(int height)  { _height = height; return this; }
+    public PersonBuilder WithWeight(int weight)  { _weight = weight; return this; }
 
     public Person Build() =>
         new Person(_name, _age, _height, _weight, _parent);

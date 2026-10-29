@@ -12,12 +12,12 @@ public class ObjectComparison
     public void CheckCurrentTsar()
     {
         // Arrange
-        var expectedTsar = A.Person
+        var expectedTsar = new PersonBuilder()
             .Named("Ivan IV The Terrible")
             .Aged(54)
             .WithHeight(170)
             .WithWeight(70)
-            .WithParent(A.Person
+            .WithParent(new PersonBuilder()
                 .Aged(28)
                 .Named("Vasili III of Russia")
                 .WithHeight(170)
@@ -30,9 +30,9 @@ public class ObjectComparison
         var actualTsar = TsarRegistry.GetCurrentTsar();
         
         // Assert
-        actualTsar.Should().NotBeNull().And.BeEquivalentTo(expectedTsar, options => 
+        actualTsar.Should().BeEquivalentTo(expectedTsar, options => 
            options.Excluding((IMemberInfo member) => 
-               member.Path.EndsWith("Id") && 
+               member.Name == "Id" && 
                member.DeclaringType == typeof(Person)));
     }
 
