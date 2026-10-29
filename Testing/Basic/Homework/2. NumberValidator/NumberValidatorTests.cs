@@ -8,179 +8,113 @@ namespace HomeExercise.Tasks.NumberValidator;
 [TestFixture]
 public class NumberValidatorTests
 {
-    [Test]
-    public void NumberValidator_WithZeroPrecision_ThrowsArgumentException()
+    // 1. Проверка параметров при создании объекта
+    [TestCase(0,  0,  true,  "precision*", Description = "Zero precision throws")]
+    [TestCase(-1, 2,  true,  "precision*", Description = "Negative precision throws")]
+    [TestCase(2,  0,  false, null,         Description = "Zero scale is allowed")]
+    [TestCase(2, -1,  true,  null,         Description = "Negative scale throws")]
+    [TestCase(3,  3,  false, null,         Description = "scale == precision is allowed")]
+    [TestCase(2,  3,  true,  null,         Description = "scale > precision throws")]
+    public void NumberValidator_BuilderValidatesParameters(
+        int precision, int scale, bool shouldThrow, string? expectedMessage)
     {
         // Arrange
         Action action = () => new NumberValidatorBuilder()
-            .WithPrecision(0)
-            .WithScale(0)
+            .WithPrecision(precision)
+            .WithScale(scale)
             .Build();
-        
+
         // Act + Assert
-        action.Should().Throw<ArgumentException>().WithMessage("precision*");
+        if (!shouldThrow)
+        {
+            action.Should().NotThrow();
+            return;
+        }
+
+        var assertion = action.Should().Throw<ArgumentException>();
+        if (expectedMessage is not null)
+        {
+            assertion.WithMessage(expectedMessage);
+        }
     }
     
-    [Test]
-    public void NumberValidator_WithNegativePrecision_ThrowsArgumentException()
+    [TestCase(0,  0,  "precision")]
+    [TestCase(-1, 2,  "precision")]
+    [TestCase(2, -1,  null)]
+    public void NumberValidator_WithInvalidParameters_Throws(int precision, int scale, string? messagePrefix)
     {
-        // Arrange
         Action action = () => new NumberValidatorBuilder()
-            .WithPrecision(-1)
-            .WithScale(2)
+            .WithPrecision(precision)
+            .WithScale(scale)
             .Build();
-        
-        // Act + Assert
-        action.Should().Throw<ArgumentException>().WithMessage("precision*");
-    }
-    
-    [Test]
-    public void NumberValidator_WithZeroScale_DoesNotThrow()
-    {
-        // Arrange
-        Action action = () => new NumberValidatorBuilder()
-            .WithPrecision(2)
-            .WithScale(0)
-            .Build();
-        
-        // Act + Assert
-        action.Should().NotThrow();
-    }
-    
-    [Test]
-    public void NumberValidator_WithNegativeScale_ThrowsArgumentException()
-    {
-        // Arrange
-        Action action = () => new NumberValidatorBuilder()
-            .WithPrecision(2)
-            .WithScale(-1)
-            .Build();
-        
-        // Act + Assert
-        action.Should().Throw<ArgumentException>();
-    }
-    
-    [Test]
-    public void IsValidNumber_WithNull_ReturnsFalse()
-    {
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
-            .WithPrecision(17)
-            .WithScale(2)
-            .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber(null).Should().BeFalse();
-    }
-    
-    [Test]
-    public void IsValidNumber_WithDecimalPoint_ShouldBeTrue()
-    {   
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
-            .WithPrecision(17)
-            .WithScale(2)
-            .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber("0.0").Should().BeTrue();
+
+        var ex = action.Should().Throw<ArgumentException>().Which;
+        if (messagePrefix is not null)
+            ex.Message.Should().StartWith(messagePrefix);
     }
 
-    [Test]
-    public void IsValidNumber_WithInteger_ShouldBeTrue()
+    [TestCase(2, 0)]
+    [TestCase(17, 2)]
+    public void NumberValidator_WithValidParameters_DoesNotThrow(int precision, int scale)
     {
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
-            .WithPrecision(17)
-            .WithScale(2)
-            .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber("0").Should().BeTrue();
-    }
-    
-    [Test]
-    public void IsValidNumber_WithMoreDigitsThanPrecision_ShouldBeFalse()
-    {
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
-            .WithPrecision(3)
-            .WithScale(2)
-            .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber("00.00").Should().BeFalse();
-    }
-    
-    [TestCase(3, 2, "-0.00")]
-    [TestCase(3, 2, "+0.00")]
-    public void IsValidNumber_WithSignedZeroExceedingPrecision_ReturnsFalse(int precision, int scale, string number)
-    {   
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
+        Action build = () => new NumberValidatorBuilder()
             .WithPrecision(precision)
             .WithScale(scale)
             .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber(number).Should().BeFalse();
+
+        build.Should().NotThrow();
     }
     
-    [TestCase(4, 2, "-1.23", false)]
-    [TestCase(4, 2, "+1.23", true)]
-    public void IsValidNumber_OnlyPositive_RejectsNegative(int precision, int scale, string number, bool expected)
+    // 2. Проверка значения
+public record ValidatorCase(
+        int Precision,
+        int Scale,
+        bool OnlyPositive,
+        string? Number,
+        bool Expected,
+        string Description)
     {
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
-            .WithPrecision(precision)
-            .WithScale(scale)
-            .EnableOnlyPositive(true)
-            .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber(number).Should().Be(expected);
+        public override string ToString() => Description;
     }
-    
-    [TestCase(3, 2, "+1.23", false)]
-    [TestCase(4, 2, "+1.23", true)]
-    [TestCase(4, 2, "-1.23", true)]
-    [TestCase(3, 2, "-1.23", false)]
-    public void IsValidNumber_CountsSignTowardPrecision(int precision, int scale, string number, bool expected)
+
+    private static readonly ValidatorCase[] Cases =
+    {
+        new(17, 2, false, null,     false, "null returns false"),
+        new(17, 2, false, "0.0",    true,  "decimal point is valid"),
+        new(17, 2, false, "0",      true,  "integer is valid"),
+        new(17, 2, false, "",       false, "empty string returns false"),
+        new(4,  2, false, "1,23",   true,  "comma as decimal separator is valid"),
+        new(4,  2, false, "1.23",   true,  "dot as decimal separator is valid"),
+        new(17, 2, false, "1.",     false, "trailing dot is invalid"),
+        new(17, 2, false, ".1",     false, "leading dot is invalid"),
+        new(17, 2, false, "+",      false, "lone plus sign is invalid"),
+        new(17, 2, false, "-",      false, "lone minus sign is invalid"),
+        new(17, 2, false, "1.2.3",  false, "multiple dots are invalid"),
+        new(17, 2, false, " 1",     false, "leading space is invalid"),
+        new(3,  2, false, "00.00",  false, "more digits than precision"),
+        new(17, 2, false, "0.000",  false, "more fractional digits than scale"),
+        new(3,  2, false, "-0.00",  false, "signed zero exceeds precision (minus)"),
+        new(3,  2, false, "+0.00",  false, "signed zero exceeds precision (plus)"),
+        new(3,  2, false, "+1.23",  false, "sign counts toward precision (fits? no)"),
+        new(4,  2, false, "+1.23",  true,  "sign counts toward precision (plus fits)"),
+        new(4,  2, false, "-1.23",  true,  "sign counts toward precision (minus fits)"),
+        new(3,  2, false, "-1.23",  false, "sign counts toward precision (minus overflows)"),
+        new(4,  2, true,  "-1.23",  false, "only positive rejects negative"),
+        new(4,  2, true,  "+1.23",  true,  "only positive accepts positive"),
+        new(17, 2, false, "a.sd",   false, "non-numeric characters rejected"),
+    };
+
+    [TestCaseSource(nameof(Cases))]
+    public void IsValidNumber_MatchesExpected(ValidatorCase c)
     {
         // Arrange
         var validator = new NumberValidatorBuilder()
-            .WithPrecision(precision)
-            .WithScale(scale)
-            .EnableOnlyPositive(false)
+            .WithPrecision(c.Precision)
+            .WithScale(c.Scale)
+            .WithOnlyPositive(c.OnlyPositive)
             .Build();
-        
+
         // Act + Assert
-        validator.IsValidNumber(number).Should().Be(expected);
-    }
-    
-    [Test]
-    public void IsValidNumber_WithMoreFractionalDigitsThanScale_ReturnsFalse()
-    {
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
-            .WithPrecision(17)
-            .WithScale(2)
-            .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber("0.000").Should().BeFalse();
-    }
-    
-    [Test]
-    public void IsValidNumber_WithNonNumericCharacters_ReturnsFalse()
-    {
-        // Arrange
-        var numberValidator = new NumberValidatorBuilder()
-            .WithPrecision(17)
-            .WithScale(2)
-            .Build();
-        
-        // Act + Assert
-        numberValidator.IsValidNumber("a.sd").Should().BeFalse();
+        validator.IsValidNumber(c.Number).Should().Be(c.Expected, c.Description);
     }
 }

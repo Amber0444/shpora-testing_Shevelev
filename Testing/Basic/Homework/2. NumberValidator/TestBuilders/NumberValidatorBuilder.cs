@@ -7,7 +7,7 @@ public class NumberValidatorBuilder
     private int _precision = 2;
     private int _scale = 2;
     
-    public NumberValidatorBuilder EnableOnlyPositive(bool onlyPositive) { _onlyPositive = onlyPositive; return this; }
+    public NumberValidatorBuilder WithOnlyPositive(bool onlyPositive) { _onlyPositive = onlyPositive; return this; }
     public NumberValidatorBuilder WithPrecision(int precision) { _precision = precision; return this; }
     public NumberValidatorBuilder WithScale(int scale) { _scale = scale; return this; }
     public NumberValidator Build()

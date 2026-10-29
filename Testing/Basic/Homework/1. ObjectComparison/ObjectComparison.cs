@@ -7,8 +7,8 @@ namespace HomeExercise.Tasks.ObjectComparison;
 public class ObjectComparison
 {   
     [Test]
-    [Description("Проверка текущего царя")]
-    [Category("ToRefactor")]
+    [Description("Проверка текущего царя из TsarRegistr (сравнение без Id)")]
+    [Category("Refactored")]
     public void CheckCurrentTsar()
     {
         // Arrange
@@ -60,10 +60,11 @@ public class ObjectComparison
             && AreEqual(actual.Parent, expected.Parent);
     }
     
-    /*  1. Неочевидная что сломалось, при падении тест вернет Expected: True But was:  False.
+    /*  1. Неочевидно что сломалось, при падении тест вернет Expected: True But was:  False.
      *  2. Не соблюдается AAA. Act и Arrange перепутаны местами, между ними нет отступа.
      *  3. Нет переиспользования кода.
      *  4. Тест неудобно расширять придется менять сразу несколько мест.
-     *  5. Рекурсия может переполниться. 
+     *  5. Рекурсия может переполниться.
+     *  6. Если добавить новые поля тест все равно будет зелёный.
      */
 }
